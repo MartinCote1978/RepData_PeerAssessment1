@@ -42,7 +42,7 @@ library(dplyr)
 ```
 
 ```r
-library(tidyr)
+#library(tidyr)
 library(ggplot2)
 
 # Loading the data
@@ -51,6 +51,9 @@ tracking_data <- tbl_df(read.csv(file="./activity.csv"))
 # Converting the 'date' variable into a type 'Date'
 tracking_data <- tracking_data %>%
   mutate(DATE = as.Date(date))
+
+# For future references
+#write.csv(tracking_data, file="tracking_data.csv", row.names=FALSE)
 ```
 
 The four (4) criteria to have "tidy data" are met, hence no preprocessing is executed on the data itself.  The four (4) criteria are:
@@ -109,7 +112,7 @@ Develop the histogram using the previous analysis.
 ```r
 # Produce the ggplot histogram
 ggplot(total_steps_analysis, aes(x=DATE)) +
-  geom_histogram(aes(weight=TOTALSTEPS), binwidth=1) +
+  geom_histogram(aes(weight=TOTALSTEPS), binwidth=1, size=0.5, col="blue") +
   xlab("Day") +
   ylab("Total Number of Steps each day") +
   labs(title="Histogram: Total Number of Steps each day") +
@@ -165,8 +168,8 @@ avg_daily_pattern <- tracking_data %>%
 
 # Produce the related plot
 ggplot(avg_daily_pattern, aes(interval, AVGNUMBERSTEPS)) +
-  geom_line() +
-  xlab("Intervals (by numbered labels") +
+  geom_line(size=1.5, col="blue") +
+  xlab("Intervals (by numbered labels)") +
   ylab("Average Number of Steps") +
   labs(title="Plot: Average number of steps per intervals") +
   theme_bw()
@@ -229,9 +232,13 @@ For each row with an 'NA' value for the 'steps' variable, retrieve the mean valu
 ```r
 # Produce a copy of the original data for backup
 tracking_data_copy <- tracking_data
+
 # Assign the mean for the 'NA'ed steps variable
 tracking_data_copy[!complete.cases(tracking_data_copy), ]$steps <- 
   avg_daily_pattern[avg_daily_pattern$interval == tracking_data_copy[!complete.cases(tracking_data_copy), ]$interval, ]$AVGNUMBERSTEPS
+
+# For future references
+#write.csv(tracking_data_copy, file="tracking_data_copy.csv", row.names=FALSE)
 ```
 
 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
@@ -248,11 +255,11 @@ total_steps_completed_analysis <- tracking_data_copy %>%
 
 # Produce the ggplot histogram
 ggplot(total_steps_completed_analysis, aes(x=DATE)) +
-  geom_histogram(aes(weight=TOTALSTEPS), binwidth=1) +
+  geom_histogram(aes(weight=TOTALSTEPS), binwidth=1, size=0.5, col="blue") +
   xlab("Day") +
   ylab("Total Number of Steps each day") +
   labs(title="Histogram: Total Number of Steps each day") +
-  #labs(sub="Cases were completed for variable 'steps' with 'NA' value.") +
+  labs(subtitle="Cases were completed for variable 'steps' with 'NA' value.") +
   theme_bw()
 ```
 
@@ -293,7 +300,8 @@ For this part the weekdays() function may be of some help here. Use the dataset 
 ```r
 tracking_data_copy_withdaytype <- tracking_data_copy %>%
   mutate(DAYLABEL = weekdays(DATE)) %>%
-  mutate(DAYTYPE = ifelse(DAYLABEL %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "Weekday", "Weekend"))
+  mutate(DAYTYPE = ifelse(DAYLABEL %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "Weekday", "Weekend")) %>%
+  mutate(DAYTYPE = factor(DAYTYPE, levels=c("Weekday", "Weekend"), labels=c("Weekday", "Weekend")))
 ```
 
 
