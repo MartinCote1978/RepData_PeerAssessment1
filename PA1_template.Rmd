@@ -30,7 +30,6 @@ The dataset is stored in a comma-separated-value (CSV) file and there are a tota
 ```{r echo=TRUE}
 # Required libraries
 library(dplyr)
-#library(tidyr)
 library(ggplot2)
 
 # Loading the data
@@ -159,7 +158,7 @@ nrow(tracking_data) - sum(complete.cases(tracking_data))
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-For each row with an 'NA' value for the 'steps' variable, retrieve the mean value for that time intervals and insert it for that observations.
+For each row with an 'NA' value for the 'steps' variable, retrieve the mean value for that specific time intervals (using the analysis when all 'NA' values are ignored) and insert it for that specific observation.  The same process is applied for all rows (i.e. observations) matching that criteria.
 
 
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
@@ -169,8 +168,9 @@ For each row with an 'NA' value for the 'steps' variable, retrieve the mean valu
 tracking_data_copy <- tracking_data
 
 # Assign the mean for the 'NA'ed steps variable
-tracking_data_copy[!complete.cases(tracking_data_copy), ]$steps <- 
-  avg_daily_pattern[avg_daily_pattern$interval == tracking_data_copy[!complete.cases(tracking_data_copy), ]$interval, ]$AVGNUMBERSTEPS
+missing_val <- tracking_data_copy[is.na(tracking_data_copy$steps),]
+missing_index <- match(missing_val$interval,avg_daily_pattern$interval)
+tracking_data_copy$steps[is.na(tracking_data_copy$steps)] <- avg_daily_pattern$AVGNUMBERSTEPS[missing_index]
 
 # For future references
 #write.csv(tracking_data_copy, file="tracking_data_copy.csv", row.names=FALSE)
@@ -203,7 +203,12 @@ total_steps_completed_analysis %>%
   select(DATE, AVGTOTALSTEPS, MEDIANTOTALSTEPS) %>%
   print()
 
+# Examine and print out the differences between the original and new analysis of the steps count
+total_steps_completed_analysis - total_steps_analysis
+
 ```
+
+Has demonstrated by "subtracting" both analysis (with and without completion for the missing values), there are little differences for the days in both average and median _**with the exception**_ of the days where the interval with 'NA' were replaced by a the average number of steps, causing a large differences in the total.  All others have no differences.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -213,10 +218,15 @@ For this part the weekdays() function may be of some help here. Use the dataset 
 1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
 
 ```{r echo=TRUE}
+# Creating a new variable 'DAYTYPE' to identify if the day for that specific date is a weekday or a weekend.
 tracking_data_copy_withdaytype <- tracking_data_copy %>%
   mutate(DAYLABEL = weekdays(DATE)) %>%
   mutate(DAYTYPE = ifelse(DAYLABEL %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "Weekday", "Weekend")) %>%
-  mutate(DAYTYPE = factor(DAYTYPE, levels=c("Weekday", "Weekend"), labels=c("Weekday", "Weekend")))
+  mutate(DAYTYPE = factor(DAYTYPE, levels=c("Weekday", "Weekend"), labels=c("Weekday", "Weekend"))) %>%
+  select(interval, DAYTYPE, DATE, steps)
+
+# For future references
+#write.csv(tracking_data_copy_withdaytype, file="tracking_data_copy_withdaytype.csv", row.names=FALSE)
 
 ```
 
@@ -227,13 +237,13 @@ tracking_data_copy_withdaytype <- tracking_data_copy %>%
 
 # Producing the analysis
 avg_daily_pattern_completed <- tracking_data_copy_withdaytype %>%
-  group_by(interval, DATE, DAYTYPE) %>%
+  group_by(interval, DAYTYPE) %>%
   summarise(AVGNUMBERSTEPS = mean(steps))
 
 # Produce the related plot
-ggplot(avg_daily_pattern_completed, aes(interval)) +
-  facet_grid(DAYTYPE ~ .) +
-  geom_line(aes(y=AVGNUMBERSTEPS)) +
+ggplot(avg_daily_pattern_completed, aes(x=interval, y=AVGNUMBERSTEPS)) +
+  geom_line(col="blue") +
+  facet_wrap( ~ DAYTYPE, ncol=1) +
   xlab("Intervals (by numbered labels)") +
   ylab("Average Number of Steps") +
   labs(title="Plot: Average number of steps per intervals") +

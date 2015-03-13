@@ -42,7 +42,6 @@ library(dplyr)
 ```
 
 ```r
-#library(tidyr)
 library(ggplot2)
 
 # Loading the data
@@ -223,7 +222,7 @@ nrow(tracking_data) - sum(complete.cases(tracking_data))
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-For each row with an 'NA' value for the 'steps' variable, retrieve the mean value for that time intervals and insert it for that observations.
+For each row with an 'NA' value for the 'steps' variable, retrieve the mean value for that specific time intervals (using the analysis when all 'NA' values are ignored) and insert it for that specific observation.  The same process is applied for all rows (i.e. observations) matching that criteria.
 
 
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
@@ -234,8 +233,9 @@ For each row with an 'NA' value for the 'steps' variable, retrieve the mean valu
 tracking_data_copy <- tracking_data
 
 # Assign the mean for the 'NA'ed steps variable
-tracking_data_copy[!complete.cases(tracking_data_copy), ]$steps <- 
-  avg_daily_pattern[avg_daily_pattern$interval == tracking_data_copy[!complete.cases(tracking_data_copy), ]$interval, ]$AVGNUMBERSTEPS
+missing_val <- tracking_data_copy[is.na(tracking_data_copy$steps),]
+missing_index <- match(missing_val$interval,avg_daily_pattern$interval)
+tracking_data_copy$steps[is.na(tracking_data_copy$steps)] <- avg_daily_pattern$AVGNUMBERSTEPS[missing_index]
 
 # For future references
 #write.csv(tracking_data_copy, file="tracking_data_copy.csv", row.names=FALSE)
@@ -283,11 +283,83 @@ total_steps_completed_analysis %>%
 ## 5  2012-10-05      46.15972          0.00000
 ## 6  2012-10-06      53.54167          0.00000
 ## 7  2012-10-07      38.24653          0.00000
-## 8  2012-10-08            NA               NA
+## 8  2012-10-08      37.38260         34.11321
 ## 9  2012-10-09      44.48264          0.00000
 ## 10 2012-10-10      34.37500          0.00000
 ## ..        ...           ...              ...
 ```
+
+```r
+# Examine and print out the differences between the original and new analysis of the steps count
+total_steps_completed_analysis - total_steps_analysis
+```
+
+```
+##      DATE TOTALSTEPS AVGTOTALSTEPS MEDIANTOTALSTEPS
+## 1  0 days   10766.19           NaN               NA
+## 2  0 days       0.00             0                0
+## 3  0 days       0.00             0                0
+## 4  0 days       0.00             0                0
+## 5  0 days       0.00             0                0
+## 6  0 days       0.00             0                0
+## 7  0 days       0.00             0                0
+## 8  0 days   10766.19           NaN               NA
+## 9  0 days       0.00             0                0
+## 10 0 days       0.00             0                0
+## 11 0 days       0.00             0                0
+## 12 0 days       0.00             0                0
+## 13 0 days       0.00             0                0
+## 14 0 days       0.00             0                0
+## 15 0 days       0.00             0                0
+## 16 0 days       0.00             0                0
+## 17 0 days       0.00             0                0
+## 18 0 days       0.00             0                0
+## 19 0 days       0.00             0                0
+## 20 0 days       0.00             0                0
+## 21 0 days       0.00             0                0
+## 22 0 days       0.00             0                0
+## 23 0 days       0.00             0                0
+## 24 0 days       0.00             0                0
+## 25 0 days       0.00             0                0
+## 26 0 days       0.00             0                0
+## 27 0 days       0.00             0                0
+## 28 0 days       0.00             0                0
+## 29 0 days       0.00             0                0
+## 30 0 days       0.00             0                0
+## 31 0 days       0.00             0                0
+## 32 0 days   10766.19           NaN               NA
+## 33 0 days       0.00             0                0
+## 34 0 days       0.00             0                0
+## 35 0 days   10766.19           NaN               NA
+## 36 0 days       0.00             0                0
+## 37 0 days       0.00             0                0
+## 38 0 days       0.00             0                0
+## 39 0 days       0.00             0                0
+## 40 0 days   10766.19           NaN               NA
+## 41 0 days   10766.19           NaN               NA
+## 42 0 days       0.00             0                0
+## 43 0 days       0.00             0                0
+## 44 0 days       0.00             0                0
+## 45 0 days   10766.19           NaN               NA
+## 46 0 days       0.00             0                0
+## 47 0 days       0.00             0                0
+## 48 0 days       0.00             0                0
+## 49 0 days       0.00             0                0
+## 50 0 days       0.00             0                0
+## 51 0 days       0.00             0                0
+## 52 0 days       0.00             0                0
+## 53 0 days       0.00             0                0
+## 54 0 days       0.00             0                0
+## 55 0 days       0.00             0                0
+## 56 0 days       0.00             0                0
+## 57 0 days       0.00             0                0
+## 58 0 days       0.00             0                0
+## 59 0 days       0.00             0                0
+## 60 0 days       0.00             0                0
+## 61 0 days   10766.19           NaN               NA
+```
+
+Has demonstrated by "subtracting" both analysis (with and without completion for the missing values), there are little differences for the days in both average and median _**with the exception**_ of the days where the interval with 'NA' were replaced by a the average number of steps, causing a large differences in the total.  All others have no differences.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -298,10 +370,15 @@ For this part the weekdays() function may be of some help here. Use the dataset 
 
 
 ```r
+# Creating a new variable 'DAYTYPE' to identify if the day for that specific date is a weekday or a weekend.
 tracking_data_copy_withdaytype <- tracking_data_copy %>%
   mutate(DAYLABEL = weekdays(DATE)) %>%
   mutate(DAYTYPE = ifelse(DAYLABEL %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "Weekday", "Weekend")) %>%
-  mutate(DAYTYPE = factor(DAYTYPE, levels=c("Weekday", "Weekend"), labels=c("Weekday", "Weekend")))
+  mutate(DAYTYPE = factor(DAYTYPE, levels=c("Weekday", "Weekend"), labels=c("Weekday", "Weekend"))) %>%
+  select(interval, DAYTYPE, DATE, steps)
+
+# For future references
+#write.csv(tracking_data_copy_withdaytype, file="tracking_data_copy_withdaytype.csv", row.names=FALSE)
 ```
 
 
@@ -311,21 +388,17 @@ tracking_data_copy_withdaytype <- tracking_data_copy %>%
 ```r
 # Producing the analysis
 avg_daily_pattern_completed <- tracking_data_copy_withdaytype %>%
-  group_by(interval, DATE, DAYTYPE) %>%
+  group_by(interval, DAYTYPE) %>%
   summarise(AVGNUMBERSTEPS = mean(steps))
 
 # Produce the related plot
-ggplot(avg_daily_pattern_completed, aes(interval)) +
-  facet_grid(DAYTYPE ~ .) +
-  geom_line(aes(y=AVGNUMBERSTEPS)) +
+ggplot(avg_daily_pattern_completed, aes(x=interval, y=AVGNUMBERSTEPS)) +
+  geom_line(col="blue") +
+  facet_wrap( ~ DAYTYPE, ncol=1) +
   xlab("Intervals (by numbered labels)") +
   ylab("Average Number of Steps") +
   labs(title="Plot: Average number of steps per intervals") +
   theme_bw()
-```
-
-```
-## Warning: Removed 1 rows containing missing values (geom_path).
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
