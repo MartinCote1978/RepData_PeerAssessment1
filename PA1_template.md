@@ -403,3 +403,4 @@ ggplot(avg_daily_pattern_completed, aes(x=interval, y=AVGNUMBERSTEPS)) +
 
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
 
+As an observation, the overall distribution of the steps is more even during the weekend than during the week, which focus more between the intervals of 800 and 1000.
